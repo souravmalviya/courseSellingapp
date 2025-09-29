@@ -9,6 +9,7 @@ app.use(express.json());// this is an middlewear
 
 
 app.use("/user", userRouter);
+app.use("/admin",)
 app.use("/courses", courseRouter)
 
 
