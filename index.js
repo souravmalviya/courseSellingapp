@@ -5,12 +5,13 @@ const {userRouter } = require("./routes/user")
 const {courseRouter} = require("./routes/course")
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
+const { adminRouter } = require("./routes/admin");
 app.use(express.json());// this is an middlewear
 
 
-app.use("/user", userRouter);
-app.use("/admin",)
-app.use("/courses", courseRouter)
+app.use("api/v1/user", userRouter);
+app.use("api/v1/user/admin",adminRouter)
+app.use("api/v1/courses", courseRouter)
 
 
 app.listen(3000, ()=>{

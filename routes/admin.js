@@ -19,6 +19,15 @@ adminRouter.post("/course", (req, res)=>{
     
 })
 
+adminRouter.put("/course", (req, res)=>{
+    //admin can chnge the coure can change the pro=ice of the course 
+    
+})
+
+adminRouter.get("/course", (req, res)=>{
+    
+})
+
 
 module.exports={
 adminRouter: adminRouter
