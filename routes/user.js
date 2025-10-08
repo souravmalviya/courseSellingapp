@@ -1,6 +1,7 @@
 
 const {Router}= require("express");
 const userRouter= Router() // created an instance for the router class 
+const {userModel}= require("../db")
 
 
 //ugly way to create an routes is to define them in a functon and then using export it can be done 

@@ -1,22 +1,20 @@
-// i will create schema in Mongoose  i will design a schema at veryfirst 
-
 const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
-const ObjectId = Schema.ObjectId;
+const ObjectId = mongoose.Types.ObjectId;
 
 const Users = new Schema({
   name: String,
   email: { type: String, unique: true },
-  Firstname: String,
-  Lastname : String
+  firstName: String,
+  lastName : String
 });
 
 const admin = new Schema({
   name: String,
   email: { type: String, unique: true },
-  Firstname: String,
-  Lastname : String
+  firstName: String,
+  lastName : String
 });
 
 const course = new Schema({
@@ -29,19 +27,19 @@ const course = new Schema({
 
 const purchases = new Schema({
   userId: ObjectId,
-  courseId: ObjectId,
-  userId: ObjectId
+  courseId: ObjectId, // learing Refferences 
+
 });
 
-const UserModel = mongoose.model('users', Users);
-const AdminModel = mongoose.model('admin', admin );
-const CourseModel= mongoose.model('course', course);
-const PurchasesModel = mongoose.model('purchase', purchases);
+const userModel = mongoose.model('users', Users);
+const adminModel = mongoose.model('admin', admin );
+const courseModel= mongoose.model('course', course);
+const purchasesModel = mongoose.model('purchase', purchases);
 
 module.exports = {
-  UserModel,
-  AdminModel,
-  CourseModel,
-  PurchasesModel
+  userModel,
+  adminModel,
+  courseModel,
+  purchasesModel
 }
 

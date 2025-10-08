@@ -1,5 +1,7 @@
 const { Router} = require('express')
 const adminRouter = Router();
+const {adminModel}= require("../db")
+
 adminRouter.post("/signup", (req, res)=>{
     //we need email name password 
     const name= req.body.name;
@@ -12,7 +14,7 @@ adminRouter.post("/signin", (req, res)=>{
     
 })
 
-adminRoute.use(adminMiddlewear());
+//adminRoute.use(adminMiddlewear());
 
 
 adminRouter.post("/course", (req, res)=>{
