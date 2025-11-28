@@ -26,7 +26,7 @@ const Course = new Schema({
 
 const Purchases = new Schema({
   userId: ObjectId,
-  courseId: ObjectId
+  courseId: ObjectId //refferencing hspprning 
 });
 
 const userModel = mongoose.model("users", Users);

@@ -8,9 +8,13 @@ userRouter.post("/signup", (req, res) => {
   const password = req.body.password;
 });
 
-userRouter.post("/signin", (req, res) => {});
+userRouter.post("/signin", (req, res) => {
 
-userRouter.get("/purchases", (req, res) => {});
+});
+
+userRouter.get("/purchases", (req, res) => {
+    
+});
 
 module.exports = {
   userRouter: userRouter
