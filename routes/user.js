@@ -3,7 +3,8 @@ const userRouter = Router();
 const { userModel } = require("../db");
 const bcrypt = require("bcrypt");
 const { z } = require("zod");
-
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET;
 
 userRouter.post("/signup", async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
@@ -38,6 +39,7 @@ userRouter.post("/signup", async (req, res) => {
       firstName,
       lastName,
     });
+    console.log(hashedPassword)
 
     return res.json({
       message: "You are signed up",
@@ -53,37 +55,42 @@ userRouter.post("/signup", async (req, res) => {
 
 
 
-userRouter.post("/signin", async (req, res) =>{
-    //user sign in we need to get the salt 
-    const {email, password}= req.body;
+userRouter.post("/signin", async (req, res) => {
+    const { email, password } = req.body;
 
-    const response = await UserModel.findOne({
-        email: email,
-       
-    });
-    
-    if (!response){
-        res.status(403).json({
-            message: "user dont exist in our DB "
+    try {
+        // find user by emailll
+        const response = await userModel.findOne({ email });
 
-        })
-    }
-   //after user exists need to check the db 
-    const passwordMatch = await bcrypt.compare(password, response.password) // im comparing the password 
+        if (!response) {
+            return res.status(403).json({
+                message: "User doesn't exist in our DB"
+            });
+        }
 
-    if (passwordMatch) {
-        const token = jwt.sign({
-            id: response._id.toString()
-        }, JWT_SECRET);
+        // compare password
+        const passwordMatch = await bcrypt.compare(password, response.password);
 
-        res.json({
-            token
-        })
+        if (!passwordMatch) {
+            return res.status(403).json({
+                message: "Incorrect credentials"
+            });
+        }
 
-    } else {
-        res.status(403).json({
-            message: "Incorrect creds"
-        })
+        // create JWT token
+        const token = jwt.sign(
+            { id: response._id.toString() },
+            JWT_SECRET
+        );
+
+        return res.json({ token });
+
+    } catch (err) {
+        console.log("Signin error:", err);
+        return res.status(500).json({
+            message: "Internal server error",
+            error: err.message
+        });
     }
 });
 
