@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const adminRouter = Router();
 const { adminModel } = require("../db");
+//wanye to add bcrypt for hashing , zod for validation and jwt for sessions 
 
 adminRouter.post("/signup", (req, res) => {
   const name = req.body.name;
@@ -20,7 +21,7 @@ adminRouter.put("/", (req, res) => {
 
 });
 
-adminRouter.get("/", (req, res) => {
+adminRouter.get("/bulk", (req, res) => {
     
 });
 
