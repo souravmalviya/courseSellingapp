@@ -4,8 +4,7 @@ const { adminModel } = require("../db");
 const bcrypt = require("bcrypt");
 const {z, string}= require("zod");
 const jwt = require("jsonwebtoken");
-const JWT_SECRET = process.env.JWT_SECRET;
-//wanye to add bcrypt for hashing , zod for validation and jwt for sessions 
+const JWT_SECRET_ADMIN = process.env.JWT_SECRET_ADMIN;
 
 adminRouter.post("/signup", async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
@@ -26,7 +25,7 @@ adminRouter.post("/signup", async (req, res) => {
     }
   
     try {
-      const userExists = await userModel.findOne({ email });
+      const userExists = await adminModel.findOne({ email });
       if (userExists) {
         return res.status(400).json({
           message: "Email already in use Try again With Different Email",
@@ -59,16 +58,16 @@ adminRouter.post("/signin", async (req, res) => {
   
       try {
           // find user by emailll
-          const response = await adminModel.findOne({ email });
+          const admin = await adminModel.findOne({ email });
   
-          if (!response) {
+          if (!admin) {
               return res.status(403).json({
                   message: "User doesn't exist in our DB"
               });
           }
   
           // compare passwordd
-          const passwordMatch = await bcrypt.compare(password, response.password);
+          const passwordMatch = await bcrypt.compare(password, admin.password);
   
           if (!passwordMatch) {
               return res.status(403).json({
@@ -78,8 +77,8 @@ adminRouter.post("/signin", async (req, res) => {
   
           // create JWT token
           const token = jwt.sign(
-              { id: response._id.toString() },
-              JWT_SECRET
+              { id: admin._id.toString() },
+              JWT_SECRET_ADMIN
           );// we can add cookie and session based authentication 
   
           return res.json({ token });
