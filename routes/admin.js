@@ -1,9 +1,10 @@
 const { Router } = require("express");
 const adminRouter = Router();
-const { adminModel } = require("../db");
+const { adminModel, courseModel } = require("../db");
 const bcrypt = require("bcrypt");
 const {z, string}= require("zod");
 const jwt = require("jsonwebtoken");
+const { adminMiddleware } = require("../middleware/admin");
 const JWT_SECRET_ADMIN = process.env.JWT_SECRET_ADMIN;
 
 adminRouter.post("/signup", async (req, res) => {
@@ -93,11 +94,44 @@ adminRouter.post("/signin", async (req, res) => {
 
 });
 
-adminRouter.post("/", (req, res) => {
+adminRouter.post("/course", adminMiddleware, async (req, res) => {
+  try {
+    const { title, description, price, imageURL } = req.body;
 
+    // basic validation (optional)
+    if (!title || !description || !price || !imageURL) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    // get admin id from middleware
+    const creatorId = req.adminId;
+
+    // create course
+    const course = await courseModel.create({
+      title,
+      description,
+      price,
+      imageURL,
+      creatorId,
+    });
+
+    return res.status(201).json({
+      message: "Course created successfully",
+      courseId: course._id,
+    });
+
+  } catch (err) {
+    console.log("Course creation error:", err);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: err.message
+    });
+  }
 });
 
+
 adminRouter.put("/", (req, res) => {
+  //here the user wants to update the course title or other stuffs
 
 });
 
