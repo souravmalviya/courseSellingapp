@@ -54,7 +54,43 @@ adminRouter.post("/signup", async (req, res) => {
     }
 });
 
-adminRouter.post("/signin", (req, res) => {
+adminRouter.post("/signin", async (req, res) => {
+  const { email, password } = req.body;
+  
+      try {
+          // find user by emailll
+          const response = await adminModel.findOne({ email });
+  
+          if (!response) {
+              return res.status(403).json({
+                  message: "User doesn't exist in our DB"
+              });
+          }
+  
+          // compare passwordd
+          const passwordMatch = await bcrypt.compare(password, response.password);
+  
+          if (!passwordMatch) {
+              return res.status(403).json({
+                  message: "Incorrect credentials"
+              });
+          }
+  
+          // create JWT token
+          const token = jwt.sign(
+              { id: response._id.toString() },
+              JWT_SECRET
+          );// we can add cookie and session based authentication 
+  
+          return res.json({ token });
+  
+      } catch (err) {
+          console.log("Signin error:", err);
+          return res.status(500).json({
+              message: "Internal server error",
+              error: err.message
+          });
+      }
 
 });
 
