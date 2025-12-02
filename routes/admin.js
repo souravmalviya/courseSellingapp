@@ -131,7 +131,7 @@ adminRouter.post("/course", adminMiddleware, async (req, res) => {
 
 
 adminRouter.put("/", (req, res) => {
-  //here the user wants to update the course title or other stuffs
+  //here the user wants to update the course title or update price or update any other settings he should be able to do
 
 });
 
