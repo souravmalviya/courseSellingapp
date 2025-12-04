@@ -2,8 +2,9 @@ const { Router } = require("express");
 const userRouter = Router();
 const { userModel } = require("../db");
 const bcrypt = require("bcrypt");
-const { z } = require("zod");
+const {z, string}= require("zod");
 const jwt = require("jsonwebtoken");
+const { userMiddleware } = require("../middleware/user");
 const JWT_SECRET = process.env.JWT_SECRET;
 
 userRouter.post("/signup", async (req, res) => {
@@ -19,7 +20,7 @@ userRouter.post("/signup", async (req, res) => {
   const parsed = requireBody.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
-      message: "Incorrect format",
+      message: "Incorrect format for your input",
       error: parsed.error,
     });
   }
@@ -39,7 +40,7 @@ userRouter.post("/signup", async (req, res) => {
       firstName,
       lastName,
     });
-    console.log(hashedPassword)
+    //console.log(hashedPassword)
 
     return res.json({
       message: "You are signed up",
@@ -52,7 +53,6 @@ userRouter.post("/signup", async (req, res) => {
     });
   }
 });
-
 
 
 userRouter.post("/signin", async (req, res) => {
@@ -68,7 +68,7 @@ userRouter.post("/signin", async (req, res) => {
             });
         }
 
-        // compare password
+        // compare passwordd
         const passwordMatch = await bcrypt.compare(password, response.password);
 
         if (!passwordMatch) {
@@ -81,7 +81,7 @@ userRouter.post("/signin", async (req, res) => {
         const token = jwt.sign(
             { id: response._id.toString() },
             JWT_SECRET
-        );
+        );// we can add cookie and session based authentication 
 
         return res.json({ token });
 
@@ -95,9 +95,12 @@ userRouter.post("/signin", async (req, res) => {
 });
 
 
-userRouter.get("/purchases", (req, res) => {
+userRouter.get("/purchases",userMiddleware, (req, res) => {
     
 });
+
+
+
 
 module.exports = {
   userRouter: userRouter
