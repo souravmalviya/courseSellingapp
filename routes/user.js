@@ -96,6 +96,7 @@ userRouter.post("/signin", async (req, res) => {
 
 
 userRouter.get("/purchases",userMiddleware, (req, res) => {
+  const {email, name}= req.body;
     
 });
 
