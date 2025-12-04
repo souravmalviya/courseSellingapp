@@ -1,12 +1,11 @@
 require("dotenv").config();
 const express = require("express");
-//const bcrypt= require("bcrypt");
 const app = express();
 const mongoose = require("mongoose");
 const { userRouter } = require("./routes/user");
 const { courseRouter } = require("./routes/course");
 const { adminRouter } = require("./routes/admin");
-const {z, string}= require("zod");
+
 
 app.use(express.json());
 
