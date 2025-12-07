@@ -1,108 +1,116 @@
 const { Router } = require("express");
 const userRouter = Router();
-const { userModel } = require("../db");
+const { userModel, purchasesModel, courseModel } = require("../db");
 const bcrypt = require("bcrypt");
-const {z, string}= require("zod");
+const { z } = require("zod");
 const jwt = require("jsonwebtoken");
 const { userMiddleware } = require("../middleware/user");
+
 const JWT_SECRET = process.env.JWT_SECRET;
+
 
 userRouter.post("/signup", async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
 
-  const requireBody = z.object({
-    email: z.string().email().min(3).max(50),
+  const schema = z.object({
+    email: z.string().email(),
     password: z.string().min(3).max(20),
-    firstName: z.string().min(3).max(20),
-    lastName: z.string().min(3).max(20),
+    firstName: z.string().min(2),
+    lastName: z.string().min(2),
   });
 
-  const parsed = requireBody.safeParse(req.body);
+  const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({
-      message: "Incorrect format for your input",
+      message: "Invalid input",
       error: parsed.error,
     });
   }
 
   try {
-    const userExists = await userModel.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({
-        message: "Email already in use Try again With Different Email",
-      });
+    const exists = await userModel.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "Email already in use" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 5);
+    const hashed = await bcrypt.hash(password, 5);
+
     await userModel.create({
       email,
-      password: hashedPassword,
+      password: hashed,
       firstName,
       lastName,
     });
-    //console.log(hashedPassword)
 
-    return res.json({
-      message: "You are signed up",
-    });
-  } catch (e) {
-    
-    return res.status(500).json({
-      message: "Something went wrong",
-      error: e.message,
-    });
+    return res.json({ message: "User registered" });
+  } catch (err) {
+    return res.status(500).json({ message: "Error", error: err.message });
   }
 });
 
 
 userRouter.post("/signin", async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    try {
-        // find user by emailll
-        const response = await userModel.findOne({ email });
+  try {
+    const user = await userModel.findOne({ email });
 
-        if (!response) {
-            return res.status(403).json({
-                message: "User doesn't exist in our DB"
-            });
-        }
-
-        // compare passwordd
-        const passwordMatch = await bcrypt.compare(password, response.password);
-
-        if (!passwordMatch) {
-            return res.status(403).json({
-                message: "Incorrect credentials"
-            });
-        }
-
-        // create JWT token
-        const token = jwt.sign(
-            { id: response._id.toString() },
-            JWT_SECRET
-        );// we can add cookie and session based authentication 
-
-        return res.json({ token });
-
-    } catch (err) {
-        console.log("Signin error:", err);
-        return res.status(500).json({
-            message: "Internal server error",
-            error: err.message
-        });
+    if (!user) {
+      return res.status(403).json({ message: "User not found" });
     }
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      return res.status(403).json({ message: "Incorrect credentials" });
+    }
+
+    const token = jwt.sign({ id: user._id }, JWT_SECRET);
+
+    return res.json({ token });
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
 });
 
 
-userRouter.get("/purchases",userMiddleware, (req, res) => {
-  const {email, name}= req.body;
-    
+userRouter.post("/purchase/:courseId", userMiddleware, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const course = await courseModel.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    await purchasesModel.create({
+      userId: req.userId,
+      courseId,
+    });
+
+    return res.json({ message: "Purchased successfully" });
+  } catch (err) {
+    return res.status(500).json({ message: "Error purchasing", error: err.message });
+  }
 });
 
 
+userRouter.get("/purchases", userMiddleware, async (req, res) => {
+  try {
+    const purchases = await purchasesModel.find({ userId: req.userId });
 
+    const courseIds = purchases.map((p) => p.courseId);
+
+    const courses = await courseModel.find({ _id: { $in: courseIds } });
+
+    return res.json({
+      message: "Purchased courses",
+      courses,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Error", error: err.message });
+  }
+});
 
 module.exports = {
-  userRouter: userRouter
+  userRouter,
 };

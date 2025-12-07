@@ -2,143 +2,150 @@ const { Router } = require("express");
 const adminRouter = Router();
 const { adminModel, courseModel } = require("../db");
 const bcrypt = require("bcrypt");
-const {z, string}= require("zod");
+const { z } = require("zod");
 const jwt = require("jsonwebtoken");
 const { adminMiddleware } = require("../middleware/admin");
+
 const JWT_SECRET_ADMIN = process.env.JWT_SECRET_ADMIN;
+
 
 adminRouter.post("/signup", async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
-  
-    const requireBody = z.object({
-      email: z.string().email().min(3).max(50),
-      password: z.string().min(3).max(20),
-      firstName: z.string().min(3).max(20),
-      lastName: z.string().min(3).max(20),
+
+  const schema = z.object({
+    email: z.string().email(),
+    password: z.string().min(3).max(20),
+    firstName: z.string().min(2),
+    lastName: z.string().min(2),
+  });
+
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      message: "Invalid input format",
+      error: parsed.error,
     });
-  
-    const parsed = requireBody.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({
-        message: "Incorrect format for your input",
-        error: parsed.error,
-      });
+  }
+
+  try {
+    const exists = await adminModel.findOne({ email });
+    if (exists) {
+      return res.status(400).json({ message: "Email already in use" });
     }
-  
-    try {
-      const userExists = await adminModel.findOne({ email });
-      if (userExists) {
-        return res.status(400).json({
-          message: "Email already in use Try again With Different Email",
-        });
-      }
-  
-      const hashedPassword = await bcrypt.hash(password, 5);
-      await adminModel.create({
-        email,
-        password: hashedPassword,
-        firstName,
-        lastName,
-      });
-      //console.log(hashedPassword)
-  
-      return res.json({
-        message: "You are signed up",
-      });
-    } catch (e) {
-      
-      return res.status(500).json({
-        message: "Something went wrong",
-        error: e.message,
-      });
-    }
+
+    const hashed = await bcrypt.hash(password, 5);
+
+    await adminModel.create({
+      email,
+      password: hashed,
+      firstName,
+      lastName,
+    });
+
+    return res.json({ message: "Admin registered successfully" });
+  } catch (err) {
+    return res.status(500).json({ message: "Error", error: err.message });
+  }
 });
+
 
 adminRouter.post("/signin", async (req, res) => {
   const { email, password } = req.body;
-  
-      try {
-          // find user by emailll
-          const admin = await adminModel.findOne({ email });
-  
-          if (!admin) {
-              return res.status(403).json({
-                  message: "User doesn't exist in our DB"
-              });
-          }
-  
-          // compare passwordd
-          const passwordMatch = await bcrypt.compare(password, admin.password);
-  
-          if (!passwordMatch) {
-              return res.status(403).json({
-                  message: "Incorrect credentials"
-              });
-          }
-  
-          // create JWT token
-          const token = jwt.sign(
-              { id: admin._id.toString() },
-              JWT_SECRET_ADMIN
-          );// we can add cookie and session based authentication 
-  
-          return res.json({ token });
-  
-      } catch (err) {
-          console.log("Signin error:", err);
-          return res.status(500).json({
-              message: "Internal server error",
-              error: err.message
-          });
-      }
 
-});
-
-adminRouter.post("/course", adminMiddleware, async (req, res) => {
   try {
-    const { title, description, price, imageURL } = req.body;
+    const admin = await adminModel.findOne({ email });
 
-    // basic validation (optional)
-    if (!title || !description || !price || !imageURL) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!admin) {
+      return res.status(403).json({ message: "Admin does not exist" });
     }
 
-    // get admin id from middleware
-    const creatorId = req.adminId;
+    const match = await bcrypt.compare(password, admin.password);
+    if (!match) {
+      return res.status(403).json({ message: "Incorrect password" });
+    }
 
-    // create course
-    const course = await courseModel.create({
-      title,
-      description,
-      price,
-      imageURL,
-      creatorId,
-    });
+    const token = jwt.sign({ id: admin._id }, JWT_SECRET_ADMIN);
 
-    return res.status(201).json({
-      message: "Course created successfully",
-      courseId: course._id,
-    });
-
+    return res.json({ token });
   } catch (err) {
-    console.log("Course creation error:", err);
     return res.status(500).json({
-      message: "Internal server error",
-      error: err.message
+      message: "Signin error",
+      error: err.message,
     });
   }
 });
 
 
-adminRouter.put("/", (req, res) => {
-  //here the user wants to update the course title or update price or update any other settings he should be able to do
+adminRouter.post("/course", adminMiddleware, async (req, res) => {
+  try {
+    const { title, description, price, imageURL } = req.body;
 
+    if (!title || !description || !price || !imageURL) {
+      return res.status(400).json({ message: "All fields required" });
+    }
+
+    const course = await courseModel.create({
+      title,
+      description,
+      price,
+      imageURL,
+      creatorId: req.adminId,
+    });
+
+    return res.status(201).json({
+      message: "Course created",
+      courseId: course._id,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Error", error: err.message });
+  }
 });
 
-adminRouter.get("/bulk", (req, res) => {
-    
+
+adminRouter.put("/course/:courseId", adminMiddleware, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    const updates = {};
+    ["title", "description", "price", "imageURL"].forEach((key) => {
+      if (req.body[key]) updates[key] = req.body[key];
+    });
+
+    const updated = await courseModel.findOneAndUpdate(
+      { _id: courseId, creatorId: req.adminId },
+      updates,
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        message: "Course not found or unauthorized",
+      });
+    }
+
+    return res.json({
+      message: "Course updated",
+      course: updated,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Error updating course", error: err.message });
+  }
+});
+
+
+adminRouter.get("/bulk", adminMiddleware, async (req, res) => {
+  try {
+    const courses = await courseModel.find({ creatorId: req.adminId });
+
+    return res.json({
+      message: "Your courses",
+      courses,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Error fetching courses", error: err.message });
+  }
 });
 
 module.exports = {
-  adminRouter: adminRouter
+  adminRouter,
 };

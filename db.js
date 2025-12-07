@@ -1,34 +1,30 @@
 const mongoose = require("mongoose");
-const Schema = mongoose.Schema;
-const ObjectId = mongoose.Types.ObjectId;
 
-const Users = new Schema({
-  name: String,
+const Users = new mongoose.Schema({
   email: { type: String, unique: true },
-  firstName: String,
   password: String,
-  lastName: String
-});
-
-const Admin = new Schema({
-  name: String,
-  email: { type: String, unique: true },
   firstName: String,
-  password:String,
-  lastName: String
+  lastName: String,
 });
 
-const Course = new Schema({
+const Admin = new mongoose.Schema({
+  email: { type: String, unique: true },
+  password: String,
+  firstName: String,
+  lastName: String,
+});
+
+const Course = new mongoose.Schema({
   title: String,
   description: String,
   price: Number,
   imageURL: String,
-  creatorId: ObjectId
+  creatorId: mongoose.Types.ObjectId,
 });
 
-const Purchases = new Schema({
-  userId: ObjectId,
-  courseId: ObjectId //refferencing hspprning 
+const Purchases = new mongoose.Schema({
+  userId: mongoose.Types.ObjectId,
+  courseId: mongoose.Types.ObjectId,
 });
 
 const userModel = mongoose.model("users", Users);
@@ -40,5 +36,5 @@ module.exports = {
   userModel,
   adminModel,
   courseModel,
-  purchasesModel
+  purchasesModel,
 };

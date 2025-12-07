@@ -10,13 +10,12 @@ function adminMiddleware(req, res, next) {
       return res.status(401).json({ message: "No token provided" });
     }
 
-    const token = authHeader.split(" ")[1];//will check with bearere
-
+    const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, JWT_SECRET_ADMIN);
 
-    req.adminId = decoded.id;  //check admin ccreating course
+    req.adminId = decoded.id;
 
-    next(); 
+    next();
   } catch (err) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
